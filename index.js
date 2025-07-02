@@ -1,19 +1,18 @@
-import express from "express"
-import mongoose from "mongoose"
-import dotenv from "dotenv"
+require("dotenv").config();
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
 
 const app = express();
+app.use(cors());
+app.use(express.json());
+app.use("/uploads", express.static("uploads"));
 
-dotenv.config();
+app.use("/api/auth", require("./routes/authRoutes"));
+app.use("/api/products", require("./routes/productRoutes"));
+app.use("/api/orders", require("./routes/orderRoutes"));
+app.use("/api/payments", require("./routes/paymentRoutes"));
 
-const PORT  = process.env.PORT || 7000;
-const MONGOURL = process.env.MONGO_URL;
-
-mongoose.connect(MONGOURL).then(
-    ()=>{console.log("database connected successfully");
-        app.listen(PORT, () =>{
-            console.log('server running on port ${PORT}');
-        });
-    }
-).catch((error) => console.log(error));
-
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => app.listen(process.env.PORT || 5000, () => console.log("Server running")))
+  .catch(err => console.error(err));
