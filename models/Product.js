@@ -5,11 +5,9 @@ const productSchema = new mongoose.Schema({
   description: String,
   price: Number,
   commission: Number,
-  Stocknumber :Number,
-  Category:String,
   stock: Number,
-  images: [String],
   category: String,
+  images: [String],
 }, { timestamps: true });
 
 module.exports = mongoose.model("Product", productSchema);
