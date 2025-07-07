@@ -4,18 +4,34 @@ const { sendEmail } = require("../utils/mailer");
 
 exports.placeOrder = async (req, res) => {
   try {
-    const { items, totalAmount, shippingAddress } = req.body;
+    const {
+      items,
+      totalAmount,
+      paymentMethod,
+      mpesaTransactionId,
+      shippingAddress,
+      customerInfo,
+    } = req.body;
+
+    let paymentStatus = paymentMethod === "cod" ? "Unpaid" : "Paid";
+
     const order = await Order.create({
       user: req.user.id,
       items,
       totalAmount,
-      shippingAddress
+      paymentMethod,
+      mpesaTransactionId,
+      shippingAddress,
+      customerInfo,
+      paymentStatus,
     });
+
     await sendEmail({
-      to: process.env.EMAIL_USER,
-      subject: "New Order Placed",
-      html: `<p>A new order has been placed by ${req.user.id}</p>`
+      to: customerInfo.email,
+      subject: "Order Placed Successfully",
+      html: `<h2>Your order has been placed!</h2><p>Order ID: ${order._id}</p>`
     });
+
     res.status(201).json(order);
   } catch (err) {
     res.status(500).json({ error: "Failed to place order" });
@@ -40,12 +56,29 @@ exports.getAllOrders = async (req, res) => {
   }
 };
 
-exports.confirmOrder = async (req, res) => {
+exports.updateOrderStatus = async (req, res) => {
   try {
-    const order = await Order.findByIdAndUpdate(req.params.id, { status: "Confirmed" }, { new: true });
+    const { status } = req.body;
+    const order = await Order.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    );
+
+    if (status === "Delivered") {
+      order.paymentStatus = order.paymentMethod === "cod" ? "Paid" : order.paymentStatus;
+      await order.save();
+
+      await sendEmail({
+        to: order.customerInfo.email,
+        subject: "Order Delivered",
+        html: `<h2>Your order has been delivered!</h2><p>Order ID: ${order._id}</p>`
+      });
+    }
+
     res.json(order);
   } catch (err) {
-    res.status(500).json({ error: "Failed to confirm order" });
+    res.status(500).json({ error: "Failed to update order status" });
   }
 };
 
