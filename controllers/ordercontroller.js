@@ -90,3 +90,23 @@ exports.cancelOrder = async (req, res) => {
     res.status(500).json({ error: "Failed to cancel order" });
   }
 };
+exports.markOrderDelivered = async (req, res) => {
+  try {
+    const order = await Order.findByIdAndUpdate(
+      req.params.id,
+      { status: "Delivered", paymentStatus: "Paid" },
+      { new: true }
+    );
+
+    await sendEmail({
+      to: order.customerInfo.email,
+      subject: "Order Delivered",
+      html: `<h2>Your order has been delivered!</h2><p>Order ID: ${order._id}</p>`
+    });
+
+    res.json(order);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to mark as delivered" });
+  }
+};
+

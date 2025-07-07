@@ -11,7 +11,7 @@ app.use("/uploads", express.static("uploads"));
 
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/products", require("./routes/productRoutes"));
-app.use("/api/orders", require("./routes/orderRoutes"));
+app.use("/api/orders", require("./routes/orderroutes"));
 app.use("/api/payments", require("./routes/paymentRoutes"));
 
 mongoose.connect(process.env.MONGO_URI)
