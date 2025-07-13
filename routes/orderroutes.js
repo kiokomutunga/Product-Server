@@ -14,8 +14,8 @@ const {
 router.post("/place", placeOrder);
 
 //  Get user's own orders
-router.get("/user", authenticateUser, getUserOrders);
-
+//router.get("/user", authenticateUser, getUserOrders);
+router.get("/user", getUserOrders);
 //  Admin fetches all orders
 router.get("/admin", authenticateUser, requireAdmin, getAllOrders);
 
