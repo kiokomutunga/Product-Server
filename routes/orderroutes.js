@@ -17,7 +17,10 @@ router.post("/place", placeOrder);
 //router.get("/user", authenticateUser, getUserOrders);
 router.get("/user", getUserOrders);
 //  Admin fetches all orders
-router.get("/admin", authenticateUser, requireAdmin, getAllOrders);
+//router.get("/admin", authenticateUser, requireAdmin, getAllOrders);
+//router.get("/admin", getAllOrders);
+router.get("/", getAllOrders); // in routes/orderRoutes.js
+
 
 // Admin updates order status (e.g., Processing → Shipped)
 router.put("/status/:id", authenticateUser, requireAdmin, updateOrderStatus);
