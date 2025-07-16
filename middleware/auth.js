@@ -1,17 +1,26 @@
 const jwt = require("jsonwebtoken");
+const User = require("../models/User"); // adjust path if different
 
-exports.authenticateUser = (req, res, next) => {
-  const token = req.header("Authorization")?.split(" ")[1];
-  if (!token) return res.status(401).json({ message: "No token" });
-  try {
-    req.user = jwt.verify(token, process.env.JWT_SECRET);
-    next();
-  } catch {
-    res.status(403).json({ message: "Invalid token" });
+exports.authenticateUser = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "No token provided" });
   }
-};
 
-exports.requireAdmin = (req, res, next) => {
-  if (req.user?.role !== "admin") return res.status(403).json({ message: "Admin only" });
-  next();
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await User.findById(decoded.id).select("-password"); // exclude password
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    req.user = user; // now req.user has full user object, including .id
+    next();
+  } catch (err) {
+    return res.status(401).json({ message: "Invalid or expired token" });
+  }
 };

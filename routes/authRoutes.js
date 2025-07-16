@@ -19,5 +19,7 @@ router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
 router.post("/change-password", authenticateUser, changePassword);
 router.post("/google-login", googleLogin);
+router.get("/profile", authenticateUser, getProfile);
+
 
 module.exports = router;
