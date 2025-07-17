@@ -28,6 +28,42 @@ exports.register = async (req, res) => {
     res.status(500).json({ error: "Registration failed" });
   }
 };
+//register admin
+// Admin Register (with secret key)
+exports.registerAdmin = async (req, res) => {
+  try {
+    const { name, email, phone, password, secretCode } = req.body;
+
+    if (secretCode !== process.env.ADMIN_SECRET) {
+      return res.status(403).json({ message: "Invalid admin secret" });
+    }
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) return res.status(400).json({ message: "Admin with this email already exists" });
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const admin = await User.create({
+      name,
+      email,
+      phone,
+      password: hashedPassword,
+      role: "admin", // assign admin role
+    });
+
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    await Otp.create({ email, code: otpCode, expiresAt: Date.now() + 10 * 60 * 1000 });
+
+    await sendEmail({
+      to: email,
+      subject: "Verify Your Admin Email",
+      html: `<p>Your OTP is <b>${otpCode}</b></p>`
+    });
+
+    res.status(201).json({ message: "Admin registered. OTP sent to email." });
+  } catch (err) {
+    res.status(500).json({ error: "Admin registration failed" });
+  }
+};
 
 // Verify OTP
 exports.verifyOtp = async (req, res) => {
