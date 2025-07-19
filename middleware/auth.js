@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
-const User = require("../models/User"); // adjust path if different
+const User = require("../models/User"); // Adjust path if needed
 
+// ✅ Authenticate user with JWT
 exports.authenticateUser = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
@@ -13,14 +14,22 @@ exports.authenticateUser = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const user = await User.findById(decoded.id).select("-password"); // exclude password
+    const user = await User.findById(decoded.id).select("-password");
     if (!user) {
       return res.status(401).json({ message: "User not found" });
     }
 
-    req.user = user; // now req.user has full user object, including .id
+    req.user = user; // attach user to request
     next();
   } catch (err) {
     return res.status(401).json({ message: "Invalid or expired token" });
   }
+};
+
+// ✅ Require user to be an admin
+exports.requireAdmin = (req, res, next) => {
+  if (!req.user || req.user.role !== "admin") {
+    return res.status(403).json({ message: "Admin access required" });
+  }
+  next();
 };
