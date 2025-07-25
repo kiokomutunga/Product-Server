@@ -47,7 +47,7 @@ exports.deleteProduct = async (req, res) => {
   }
 };
 
-// ✅ Search products with filters
+//Search products with filters
 exports.searchProducts = async (req, res) => {
   const {
     q = "",
