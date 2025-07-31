@@ -14,6 +14,10 @@ app.use("/api/products", require("./routes/productRoutes"));
 app.use("/api/orders", require("./routes/orderroutes"));
 app.use("/api/payments", require("./routes/paymentRoutes"));
 
+const mpesaRoutes = require("./routes/mpesaRoutes");
+app.use("/api/mpesa", mpesaRoutes);
+
+
 mongoose.connect(process.env.MONGO_URI)
   .then(() => app.listen(process.env.PORT || 5000, () => console.log("Server running")))
   .catch(err => console.error(err));

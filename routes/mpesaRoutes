@@ -1,0 +1,7 @@
+const router = require("express").Router();
+const { stkPush, mpesaCallback } = require("../controllers/mpesaController");
+
+router.post("/stk", stkPush);
+router.post("/callback", mpesaCallback);
+
+module.exports = router;
