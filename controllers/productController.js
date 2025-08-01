@@ -104,3 +104,74 @@ exports.searchProducts = async (req, res) => {
     res.status(500).json({ error: "Search failed" });
   }
 };
+
+// ✅ Add Review
+exports.addReview = async (req, res) => {
+  const { rating, comment } = req.body;
+
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ error: "Product not found" });
+
+    // Check if user already reviewed
+    const alreadyReviewed = product.reviews.find(r => r.user.toString() === req.user._id.toString());
+    if (alreadyReviewed) return res.status(400).json({ error: "You already reviewed this product" });
+
+    const review = {
+      user: req.user._id,
+      name: req.user.username || req.user.name,
+      rating: Number(rating),
+      comment,
+      verifiedPurchase: true,
+    };
+
+    product.reviews.push(review);
+    product.numReviews = product.reviews.length;
+    product.averageRating =
+      product.reviews.reduce((acc, r) => acc + r.rating, 0) / product.reviews.length;
+
+    await product.save();
+    res.status(201).json({ message: "Review added", reviews: product.reviews });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to add review" });
+  }
+};
+
+// ✅ Admin: Delete Review
+exports.deleteReview = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ error: "Product not found" });
+
+    product.reviews = product.reviews.filter(r => r._id.toString() !== req.params.reviewId);
+    product.numReviews = product.reviews.length;
+    product.averageRating =
+      product.reviews.length > 0
+        ? product.reviews.reduce((acc, r) => acc + r.rating, 0) / product.reviews.length
+        : 0;
+
+    await product.save();
+    res.json({ message: "Review deleted", reviews: product.reviews });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete review" });
+  }
+};
+
+// ✅ Admin: Hide/Unhide Review
+exports.toggleReviewVisibility = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ error: "Product not found" });
+
+    const review = product.reviews.id(req.params.reviewId);
+    if (!review) return res.status(404).json({ error: "Review not found" });
+
+    review.hidden = !review.hidden;
+    await product.save();
+
+    res.json({ message: "Review visibility updated", review });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update review visibility" });
+  }
+};
