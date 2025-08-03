@@ -61,15 +61,18 @@ exports.searchProducts = async (req, res) => {
 
   const filter = {};
 
-  // Full-text search
+  // Search in multiple fields (name, description, category)
   if (q.trim()) {
-    filter.$text = { $search: q.trim() };
+    const regex = new RegExp(q.trim(), "i");
+    filter.$or = [
+      { name: regex },
+      { description: regex },
+      { category: regex }
+    ];
   }
 
   // Category filter
-  if (cat) {
-    filter.category = cat;
-  }
+  if (cat) filter.category = cat;
 
   // Price filter
   if (min || max) {
@@ -79,17 +82,24 @@ exports.searchProducts = async (req, res) => {
   }
 
   // Sort options
-  let sortOption = { score: { $meta: "textScore" } }; // default: relevance
+  let sortOption = {};
   if (sort === "price_low")  sortOption = { price: 1 };
   if (sort === "price_high") sortOption = { price: -1 };
   if (sort === "newest")     sortOption = { createdAt: -1 };
 
   try {
-    const products = await Product
-      .find(filter, q ? { score: { $meta: "textScore" } } : {})
+    // Paginated results
+    const products = await Product.find(filter)
       .sort(sortOption)
       .skip((page - 1) * limit)
       .limit(Number(limit));
+
+    // Suggestions: first 5 product names for the search
+    const suggestions = q.trim()
+      ? await Product.find({ name: { $regex: q.trim(), $options: "i" } })
+          .select("name")
+          .limit(5)
+      : [];
 
     const total = await Product.countDocuments(filter);
 
@@ -97,13 +107,15 @@ exports.searchProducts = async (req, res) => {
       products,
       total,
       page: Number(page),
-      pages: Math.ceil(total / limit)
+      pages: Math.ceil(total / limit),
+      suggestions: suggestions.map(s => s.name) // Only names
     });
   } catch (err) {
     console.error("Search error:", err.message);
     res.status(500).json({ error: "Search failed" });
   }
 };
+
 
 // ✅ Add Review
 exports.addReview = async (req, res) => {

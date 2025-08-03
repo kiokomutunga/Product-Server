@@ -8,6 +8,7 @@ const {
   updateOrderStatus,
   markOrderDelivered,
   cancelOrder,
+  getOrderById,
 } = require("../controllers/ordercontroller");
 
 //  User places order
@@ -28,5 +29,7 @@ router.put("/deliver/:id",requireAdmin, markOrderDelivered);
 
 // Admin cancels order
 router.put("/cancel/:id", authenticateUser,requireAdmin, cancelOrder);
+//get orders by id
+router.get("/:id", getOrderById);
 
 module.exports = router;

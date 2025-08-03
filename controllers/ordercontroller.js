@@ -48,7 +48,38 @@ exports.placeOrder = async (req, res) => {
     await sendEmail({
       to: customerInfo.email,
       subject: "Order Placed Successfully",
-      html: `<h2>Your order has been placed!</h2><p>Order ID: ${order._id}</p>`,
+      html: `
+<div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;">
+  <div style="max-width: 600px; margin: auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+    <div style="background: #ffb300; padding: 20px; text-align: center;">
+      <h1 style="margin: 0; color: white; font-size: 28px;">Limpopo Furniture Stores</h1>
+    </div>
+    <div style="padding: 30px; text-align: center;">
+      <h2 style="color: #333;">🎉 Your Order Has Been Placed!</h2>
+      <p style="font-size: 16px; color: #555;">Thank you for shopping with us. Your order is now being processed.</p>
+      
+      <div style="margin: 20px 0; padding: 15px; background: #f1f1f1; border-radius: 8px;">
+        <p style="margin: 0; font-size: 18px; color: #333;">
+          <strong>Order ID:</strong> ${order._id}
+        </p>
+      </div>
+
+      <p style="font-size: 15px; color: #777;">
+        We’ll send you another email once your items are shipped.  
+        You can track your order anytime from your account.
+      </p>
+
+      <a href="https://yourwebsite.com/orders/${order._id}" 
+         style="display: inline-block; margin-top: 20px; padding: 12px 20px; background: #ffb300; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+         View My Order
+      </a>
+    </div>
+    <div style="background: #333; color: #fff; text-align: center; padding: 15px; font-size: 12px;">
+      © 2025 Limpopo Furniture Stores. All Rights Reserved.
+    </div>
+  </div>
+</div>
+`,
     });
 
     res.status(201).json({ success: true, order });
@@ -168,5 +199,15 @@ exports.cancelOrder = async (req, res) => {
   } catch (err) {
     console.error("Failed to cancel order:", err);
     res.status(500).json({ success: false, error: "Failed to cancel order" });
+  }
+};
+
+exports.getOrderById = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+    res.json(order);
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
   }
 };
