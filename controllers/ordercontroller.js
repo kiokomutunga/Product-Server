@@ -35,6 +35,7 @@ exports.placeOrder = async (req, res) => {
     const paymentStatus = paymentMethod === "cod" ? "Unpaid" : "Paid";
 
     const order = await Order.create({
+      user: req.user._id,
       items: formattedItems,
       totalAmount,
       paymentMethod,
