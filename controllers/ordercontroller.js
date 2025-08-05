@@ -205,10 +205,46 @@ exports.cancelOrder = async (req, res) => {
 
 exports.getOrderById = async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id);
-    if (!order) return res.status(404).json({ message: "Order not found" });
-    res.json(order);
+    // Populate product details in items
+    const order = await Order.findById(req.params.id)
+      .populate("items.product") // populate product info
+      .populate("user", "firstName lastName email phone"); // optional: fetch user info
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    // Respond with a structured object including customer and shipping info
+    res.json({
+      success: true,
+      order: {
+        _id: order._id,
+        status: order.status,
+        paymentMethod: order.paymentMethod,
+        paymentStatus: order.paymentStatus,
+        totalAmount: order.totalAmount,
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt,
+
+        // Include items with product details
+        items: order.items.map(item => ({
+          quantity: item.quantity,
+          product: {
+            _id: item.product._id,
+            name: item.product.name,
+            price: item.product.price,
+            image: item.product.image || null
+          }
+        })),
+
+        // Include customer info and shipping address
+        customerInfo: order.customerInfo,
+        shippingAddress: order.shippingAddress
+      }
+    });
   } catch (err) {
-    res.status(500).json({ message: "Server error" });
+    console.error("Error fetching order by ID:", err);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
