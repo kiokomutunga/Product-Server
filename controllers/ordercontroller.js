@@ -143,7 +143,84 @@ exports.updateOrderStatus = async (req, res) => {
       await sendEmail({
         to: order.customerInfo.email,
         subject: "Order Delivered",
-        html: `<h2>Your order has been delivered!</h2><p>Order ID: ${order._id}</p>`,
+        html: `<!DOCTYPE html>
+  <html lang="en" style="margin:0; padding:0; font-family: Arial, sans-serif;">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Order Delivered</title>
+  </head>
+  <body style="margin:0; padding:0; background-color:#f4f4f4;">
+    <table align="center" cellpadding="0" cellspacing="0" width="100%" style="max-width:600px; background:#ffffff; border-radius:8px; overflow:hidden;">
+      
+      <!-- Header -->
+      <tr>
+        <td style="background-color:#0d6efd; padding:20px; text-align:center; color:#ffffff;">
+          <h1 style="margin:0; font-size:24px;">🎉 Order Delivered!</h1>
+        </td>
+      </tr>
+
+      <!-- Body -->
+      <tr>
+        <td style="padding:30px;">
+          <h2 style="color:#333; margin-top:0;">Hello ${order.customerInfo?.name || 'Customer'},</h2>
+          <p style="color:#555; font-size:16px; line-height:1.5;">
+            We are thrilled to let you know that your order 
+            <strong>#${order._id}</strong> has been successfully delivered to your address.
+          </p>
+
+          <!-- Order Summary -->
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px; border:1px solid #ddd; border-radius:6px; overflow:hidden;">
+            <tr style="background:#f9f9f9;">
+              <td style="padding:12px; font-weight:bold;">Item</td>
+              <td style="padding:12px; font-weight:bold; text-align:right;">Qty</td>
+              <td style="padding:12px; font-weight:bold; text-align:right;">Price</td>
+            </tr>
+            ${order.items
+              .map(
+                (item) => `
+            <tr>
+              <td style="padding:12px; border-top:1px solid #eee;">${item.name}</td>
+              <td style="padding:12px; text-align:right; border-top:1px solid #eee;">${item.quantity}</td>
+              <td style="padding:12px; text-align:right; border-top:1px solid #eee;">KES ${item.price * item.quantity}</td>
+            </tr>
+            `
+              )
+              .join('')}
+            <tr>
+              <td colspan="2" style="padding:12px; font-weight:bold; text-align:right; border-top:1px solid #eee;">Total</td>
+              <td style="padding:12px; font-weight:bold; text-align:right; border-top:1px solid #eee;">KES ${order.totalAmount}</td>
+            </tr>
+          </table>
+
+          <!-- Delivery Info -->
+          <p style="margin-top:20px; color:#555;">
+            <strong>Delivered To:</strong><br/>
+            ${order.shippingAddress.address}<br/>
+            ${order.shippingAddress.city}, ${order.shippingAddress.county}<br/>
+            ${order.shippingAddress.postalCode}
+          </p>
+
+          <!-- CTA Button -->
+          <p style="margin-top:30px; text-align:center;">
+            <a href="https://yourwebsite.com/orders/${order._id}" 
+              style="background:#0d6efd; color:#fff; padding:12px 24px; text-decoration:none; font-weight:bold; border-radius:6px;">
+              View Order Details
+            </a>
+          </p>
+        </td>
+      </tr>
+
+      <!-- Footer -->
+      <tr>
+        <td style="background-color:#f4f4f4; text-align:center; padding:20px; font-size:12px; color:#888;">
+          Thank you for shopping with <strong>Your Store</strong>!<br/>
+          &copy; ${new Date().getFullYear()} Your Store. All rights reserved.
+        </td>
+      </tr>
+    </table>
+  </body>
+  </html>`,
       });
     }
 
@@ -172,10 +249,90 @@ exports.markOrderDelivered = async (req, res) => {
     await order.save();
 
     await sendEmail({
-      to: order.customerInfo.email,
-      subject: "Order Delivered",
-      html: `<h2>Your order has been delivered!</h2><p>Order ID: ${order._id}</p>`,
-    });
+  to: order.customerInfo.email,
+  subject: "Order Delivered",
+  html: `
+  <!DOCTYPE html>
+  <html lang="en" style="margin:0; padding:0; font-family: Arial, sans-serif;">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Order Delivered</title>
+  </head>
+  <body style="margin:0; padding:0; background-color:#f4f4f4;">
+    <table align="center" cellpadding="0" cellspacing="0" width="100%" style="max-width:600px; background:#ffffff; border-radius:8px; overflow:hidden;">
+      
+      <!-- Header -->
+      <tr>
+        <td style="background-color:#0d6efd; padding:20px; text-align:center; color:#ffffff;">
+          <h1 style="margin:0; font-size:24px;">🎉 Order Delivered!</h1>
+        </td>
+      </tr>
+
+      <!-- Body -->
+      <tr>
+        <td style="padding:30px;">
+          <h2 style="color:#333; margin-top:0;">Hello ${order.customerInfo?.name || 'Customer'},</h2>
+          <p style="color:#555; font-size:16px; line-height:1.5;">
+            We are thrilled to let you know that your order 
+            <strong>#${order._id}</strong> has been successfully delivered to your address.
+          </p>
+
+          <!-- Order Summary -->
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px; border:1px solid #ddd; border-radius:6px; overflow:hidden;">
+            <tr style="background:#f9f9f9;">
+              <td style="padding:12px; font-weight:bold;">Item</td>
+              <td style="padding:12px; font-weight:bold; text-align:right;">Qty</td>
+              <td style="padding:12px; font-weight:bold; text-align:right;">Price</td>
+            </tr>
+            ${order.items
+              .map(
+                (item) => `
+            <tr>
+              <td style="padding:12px; border-top:1px solid #eee;">${item.name}</td>
+              <td style="padding:12px; text-align:right; border-top:1px solid #eee;">${item.quantity}</td>
+              <td style="padding:12px; text-align:right; border-top:1px solid #eee;">KES ${item.price * item.quantity}</td>
+            </tr>
+            `
+              )
+              .join('')}
+            <tr>
+              <td colspan="2" style="padding:12px; font-weight:bold; text-align:right; border-top:1px solid #eee;">Total</td>
+              <td style="padding:12px; font-weight:bold; text-align:right; border-top:1px solid #eee;">KES ${order.totalAmount}</td>
+            </tr>
+          </table>
+
+          <!-- Delivery Info -->
+          <p style="margin-top:20px; color:#555;">
+            <strong>Delivered To:</strong><br/>
+            ${order.shippingAddress.address}<br/>
+            ${order.shippingAddress.city}, ${order.shippingAddress.county}<br/>
+            ${order.shippingAddress.postalCode}
+          </p>
+
+          <!-- CTA Button -->
+          <p style="margin-top:30px; text-align:center;">
+            <a href="https://yourwebsite.com/orders/${order._id}" 
+              style="background:#0d6efd; color:#fff; padding:12px 24px; text-decoration:none; font-weight:bold; border-radius:6px;">
+              View Order Details
+            </a>
+          </p>
+        </td>
+      </tr>
+
+      <!-- Footer -->
+      <tr>
+        <td style="background-color:#f4f4f4; text-align:center; padding:20px; font-size:12px; color:#888;">
+          Thank you for shopping with <strong>Your Store</strong>!<br/>
+          &copy; ${new Date().getFullYear()} Your Store. All rights reserved.
+        </td>
+      </tr>
+    </table>
+  </body>
+  </html>
+  `,
+});
+
 
     res.json({ success: true, order });
   } catch (err) {

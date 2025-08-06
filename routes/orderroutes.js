@@ -25,7 +25,7 @@ router.get("/", authenticateUser, requireAdmin, getAllOrders);
 router.put("/status/:id", authenticateUser, requireAdmin, updateOrderStatus);
 
 // Admin marks order as delivered (triggers delivery email)
-router.put("/deliver/:id",requireAdmin, markOrderDelivered);
+router.put("/deliver/:id",authenticateUser, requireAdmin, markOrderDelivered);
 
 // Admin cancels order
 router.put("/cancel/:id", authenticateUser,requireAdmin, cancelOrder);
