@@ -10,7 +10,7 @@ app.use(express.json());
 app.use("/uploads", express.static("uploads"));
 
 app.use("/api/auth", require("./routes/authRoutes"));
-app.use("/api/products", require("./routes/productRoutes"));
+app.use("/api/products", require("./routes/productroutes"));
 app.use("/api/orders", require("./routes/orderroutes"));
 app.use("/api/payments", require("./routes/paymentRoutes"));
 
