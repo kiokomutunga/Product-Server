@@ -124,103 +124,112 @@ exports.updateOrderStatus = async (req, res) => {
       return res.status(400).json({ success: false, error: "Invalid order status" });
     }
 
-    const order = await Order.findById(req.params.id);
+    // Populate items with full product info
+    const order = await Order.findById(req.params.id)
+      .populate("items.product");
+
     if (!order) {
       return res.status(404).json({ success: false, error: "Order not found" });
     }
 
     order.status = status;
 
-    // If delivered and payment is COD, mark as paid
     if (status === "Delivered" && order.paymentMethod === "cod") {
       order.paymentStatus = "Paid";
     }
 
     await order.save();
 
-    // Email on delivery
+    // Send email if delivered
     if (status === "Delivered") {
+      const customerName = `${order.customerInfo.firstName} ${order.customerInfo.lastName}`;
+
+      const orderItemsHTML = order.items.map(item => {
+        const product = item.product;
+        return `
+          <tr>
+            <td style="padding:12px; border-top:1px solid #eee; display:flex; align-items:center; gap:10px;">
+              <img src="${product.image}" alt="${product.name}" width="50" style="border-radius:4px;"/>
+              ${product.name}
+            </td>
+            <td style="padding:12px; text-align:right; border-top:1px solid #eee;">${item.quantity}</td>
+            <td style="padding:12px; text-align:right; border-top:1px solid #eee;">KES ${product.price * item.quantity}</td>
+          </tr>
+        `;
+      }).join("");
+
       await sendEmail({
         to: order.customerInfo.email,
         subject: "Order Delivered",
-        html: `<!DOCTYPE html>
-  <html lang="en" style="margin:0; padding:0; font-family: Arial, sans-serif;">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Order Delivered</title>
-  </head>
-  <body style="margin:0; padding:0; background-color:#f4f4f4;">
-    <table align="center" cellpadding="0" cellspacing="0" width="100%" style="max-width:600px; background:#ffffff; border-radius:8px; overflow:hidden;">
-      
-      <!-- Header -->
-      <tr>
-        <td style="background-color:#0d6efd; padding:20px; text-align:center; color:#ffffff;">
-          <h1 style="margin:0; font-size:24px;">🎉 Order Delivered!</h1>
-        </td>
-      </tr>
+        html: `
+<!DOCTYPE html>
+<html lang="en" style="margin:0; padding:0; font-family: Arial, sans-serif;">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Order Delivered</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f4f4f4;">
+  <table align="center" cellpadding="0" cellspacing="0" width="100%" style="max-width:600px; background:#ffffff; border-radius:8px; overflow:hidden;">
+    
+    <!-- Header -->
+    <tr>
+      <td style="background-color:#0d6efd; padding:20px; text-align:center; color:#ffffff;">
+        <h1 style="margin:0; font-size:24px;">🎉 Order Delivered!</h1>
+      </td>
+    </tr>
 
-      <!-- Body -->
-      <tr>
-        <td style="padding:30px;">
-          <h2 style="color:#333; margin-top:0;">Hello ${order.customerInfo?.name || 'Customer'},</h2>
-          <p style="color:#555; font-size:16px; line-height:1.5;">
-            We are thrilled to let you know that your order 
-            <strong>#${order._id}</strong> has been successfully delivered to your address.
-          </p>
+    <!-- Body -->
+    <tr>
+      <td style="padding:30px;">
+        <h2 style="color:#333; margin-top:0;">Hello ${customerName},</h2>
+        <p style="color:#555; font-size:16px; line-height:1.5;">
+          Your order <strong>#${order._id}</strong> has been successfully delivered.
+        </p>
 
-          <!-- Order Summary -->
-          <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px; border:1px solid #ddd; border-radius:6px; overflow:hidden;">
-            <tr style="background:#f9f9f9;">
-              <td style="padding:12px; font-weight:bold;">Item</td>
-              <td style="padding:12px; font-weight:bold; text-align:right;">Qty</td>
-              <td style="padding:12px; font-weight:bold; text-align:right;">Price</td>
-            </tr>
-            ${order.items
-              .map(
-                (item) => `
-            <tr>
-              <td style="padding:12px; border-top:1px solid #eee;">${item.name}</td>
-              <td style="padding:12px; text-align:right; border-top:1px solid #eee;">${item.quantity}</td>
-              <td style="padding:12px; text-align:right; border-top:1px solid #eee;">KES ${item.price * item.quantity}</td>
-            </tr>
-            `
-              )
-              .join('')}
-            <tr>
-              <td colspan="2" style="padding:12px; font-weight:bold; text-align:right; border-top:1px solid #eee;">Total</td>
-              <td style="padding:12px; font-weight:bold; text-align:right; border-top:1px solid #eee;">KES ${order.totalAmount}</td>
-            </tr>
-          </table>
+        <!-- Order Summary -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px; border:1px solid #ddd; border-radius:6px;">
+          <tr style="background:#f9f9f9;">
+            <td style="padding:12px; font-weight:bold;">Item</td>
+            <td style="padding:12px; font-weight:bold; text-align:right;">Qty</td>
+            <td style="padding:12px; font-weight:bold; text-align:right;">Price</td>
+          </tr>
+          ${orderItemsHTML}
+          <tr>
+            <td colspan="2" style="padding:12px; font-weight:bold; text-align:right; border-top:1px solid #eee;">Total</td>
+            <td style="padding:12px; font-weight:bold; text-align:right; border-top:1px solid #eee;">KES ${order.totalAmount}</td>
+          </tr>
+        </table>
 
-          <!-- Delivery Info -->
-          <p style="margin-top:20px; color:#555;">
-            <strong>Delivered To:</strong><br/>
-            ${order.shippingAddress.address}<br/>
-            ${order.shippingAddress.city}, ${order.shippingAddress.county}<br/>
-            ${order.shippingAddress.postalCode}
-          </p>
+        <!-- Delivery Info -->
+        <p style="margin-top:20px; color:#555;">
+          <strong>Delivered To:</strong><br/>
+          ${order.shippingAddress.address}<br/>
+          ${order.shippingAddress.city}, ${order.shippingAddress.county}<br/>
+          ${order.shippingAddress.postalCode}
+        </p>
 
-          <!-- CTA Button -->
-          <p style="margin-top:30px; text-align:center;">
-            <a href="https://yourwebsite.com/orders/${order._id}" 
-              style="background:#0d6efd; color:#fff; padding:12px 24px; text-decoration:none; font-weight:bold; border-radius:6px;">
-              View Order Details
-            </a>
-          </p>
-        </td>
-      </tr>
+        <!-- CTA -->
+        <p style="margin-top:30px; text-align:center;">
+          <a href="https://yourwebsite.com/orders/${order._id}" 
+            style="background:#0d6efd; color:#fff; padding:12px 24px; text-decoration:none; font-weight:bold; border-radius:6px;">
+            View Order Details
+          </a>
+        </p>
+      </td>
+    </tr>
 
-      <!-- Footer -->
-      <tr>
-        <td style="background-color:#f4f4f4; text-align:center; padding:20px; font-size:12px; color:#888;">
-          Thank you for shopping with <strong>Your Store</strong>!<br/>
-          &copy; ${new Date().getFullYear()} Your Store. All rights reserved.
-        </td>
-      </tr>
-    </table>
-  </body>
-  </html>`,
+    <!-- Footer -->
+    <tr>
+      <td style="background-color:#f4f4f4; text-align:center; padding:20px; font-size:12px; color:#888;">
+        Thank you for shopping with <strong>Your Store</strong>!<br/>
+        &copy; ${new Date().getFullYear()} Your Store. All rights reserved.
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+        `
       });
     }
 
@@ -231,10 +240,9 @@ exports.updateOrderStatus = async (req, res) => {
   }
 };
 
-
 exports.markOrderDelivered = async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id);
+    const order = await Order.findById(req.params.id).populate("items.product");
 
     if (!order) {
       return res.status(404).json({ success: false, error: "Order not found" });
@@ -248,91 +256,86 @@ exports.markOrderDelivered = async (req, res) => {
 
     await order.save();
 
+    // Send Email Notification
     await sendEmail({
-  to: order.customerInfo.email,
-  subject: "Order Delivered",
-  html: `
-  <!DOCTYPE html>
-  <html lang="en" style="margin:0; padding:0; font-family: Arial, sans-serif;">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Order Delivered</title>
-  </head>
-  <body style="margin:0; padding:0; background-color:#f4f4f4;">
-    <table align="center" cellpadding="0" cellspacing="0" width="100%" style="max-width:600px; background:#ffffff; border-radius:8px; overflow:hidden;">
-      
-      <!-- Header -->
-      <tr>
-        <td style="background-color:#0d6efd; padding:20px; text-align:center; color:#ffffff;">
-          <h1 style="margin:0; font-size:24px;">🎉 Order Delivered!</h1>
-        </td>
-      </tr>
+      to: order.customerInfo.email,
+      subject: "Your Order Has Been Delivered!",
+      html: `
+      <!DOCTYPE html>
+      <html lang="en" style="margin:0; padding:0; font-family: Arial, sans-serif;">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <title>Order Delivered</title>
+      </head>
+      <body style="margin:0; padding:0; background-color:#f4f4f4;">
+        <table align="center" cellpadding="0" cellspacing="0" width="100%" style="max-width:600px; background:#ffffff; border-radius:8px; overflow:hidden;">
+          
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#0d6efd; padding:20px; text-align:center; color:#ffffff;">
+              <h1 style="margin:0; font-size:24px;">🎉 Your Order has been Delivered!</h1>
+            </td>
+          </tr>
 
-      <!-- Body -->
-      <tr>
-        <td style="padding:30px;">
-          <h2 style="color:#333; margin-top:0;">Hello ${order.customerInfo?.name || 'Customer'},</h2>
-          <p style="color:#555; font-size:16px; line-height:1.5;">
-            We are thrilled to let you know that your order 
-            <strong>#${order._id}</strong> has been successfully delivered to your address.
-          </p>
+          <!-- Body -->
+          <tr>
+            <td style="padding:30px;">
+              <h2 style="color:#333; margin-top:0;">Hello ${order.customerInfo?.firstName || 'Customer'},</h2>
+              <p style="color:#555; font-size:16px; line-height:1.5;">
+                We're happy to let you know that your order <strong>#${order._id}</strong> has been delivered successfully.
+              </p>
 
-          <!-- Order Summary -->
-          <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px; border:1px solid #ddd; border-radius:6px; overflow:hidden;">
-            <tr style="background:#f9f9f9;">
-              <td style="padding:12px; font-weight:bold;">Item</td>
-              <td style="padding:12px; font-weight:bold; text-align:right;">Qty</td>
-              <td style="padding:12px; font-weight:bold; text-align:right;">Price</td>
-            </tr>
-            ${order.items
-              .map(
-                (item) => `
-            <tr>
-              <td style="padding:12px; border-top:1px solid #eee;">${item.name}</td>
-              <td style="padding:12px; text-align:right; border-top:1px solid #eee;">${item.quantity}</td>
-              <td style="padding:12px; text-align:right; border-top:1px solid #eee;">KES ${item.price * item.quantity}</td>
-            </tr>
-            `
-              )
-              .join('')}
-            <tr>
-              <td colspan="2" style="padding:12px; font-weight:bold; text-align:right; border-top:1px solid #eee;">Total</td>
-              <td style="padding:12px; font-weight:bold; text-align:right; border-top:1px solid #eee;">KES ${order.totalAmount}</td>
-            </tr>
-          </table>
+              <!-- Order Summary -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px; border:1px solid #ddd; border-radius:6px; overflow:hidden;">
+                <tr style="background:#f9f9f9;">
+                  <td style="padding:12px; font-weight:bold;">Product</td>
+                  <td style="padding:12px; font-weight:bold; text-align:right;">Quantity</td>
+                  <td style="padding:12px; font-weight:bold; text-align:right;">Total Price</td>
+                </tr>
+                ${order.items.map(item => `
+                  <tr>
+                    <td style="padding:12px; border-top:1px solid #eee;">${item.product?.name || "N/A"}</td>
+                    <td style="padding:12px; text-align:right; border-top:1px solid #eee;">${item.quantity}</td>
+                    <td style="padding:12px; text-align:right; border-top:1px solid #eee;">KES ${(item.product?.price || 0) * item.quantity}</td>
+                  </tr>
+                `).join('')}
+                <tr>
+                  <td colspan="2" style="padding:12px; font-weight:bold; text-align:right; border-top:1px solid #eee;">Total</td>
+                  <td style="padding:12px; font-weight:bold; text-align:right; border-top:1px solid #eee;">KES ${order.totalAmount}</td>
+                </tr>
+              </table>
 
-          <!-- Delivery Info -->
-          <p style="margin-top:20px; color:#555;">
-            <strong>Delivered To:</strong><br/>
-            ${order.shippingAddress.address}<br/>
-            ${order.shippingAddress.city}, ${order.shippingAddress.county}<br/>
-            ${order.shippingAddress.postalCode}
-          </p>
+              <!-- Delivery Info -->
+              <p style="margin-top:20px; color:#555;">
+                <strong>Delivered To:</strong><br/>
+                ${order.shippingAddress.address}<br/>
+                ${order.shippingAddress.city}, ${order.shippingAddress.county}<br/>
+                ${order.shippingAddress.postalCode}
+              </p>
 
-          <!-- CTA Button -->
-          <p style="margin-top:30px; text-align:center;">
-            <a href="https://yourwebsite.com/orders/${order._id}" 
-              style="background:#0d6efd; color:#fff; padding:12px 24px; text-decoration:none; font-weight:bold; border-radius:6px;">
-              View Order Details
-            </a>
-          </p>
-        </td>
-      </tr>
+              <!-- CTA Button -->
+              <p style="margin-top:30px; text-align:center;">
+                <a href="https://yourwebsite.com/orders/${order._id}" 
+                  style="background:#0d6efd; color:#fff; padding:12px 24px; text-decoration:none; font-weight:bold; border-radius:6px;">
+                  View Your Order
+                </a>
+              </p>
+            </td>
+          </tr>
 
-      <!-- Footer -->
-      <tr>
-        <td style="background-color:#f4f4f4; text-align:center; padding:20px; font-size:12px; color:#888;">
-          Thank you for shopping with <strong>Your Store</strong>!<br/>
-          &copy; ${new Date().getFullYear()} Your Store. All rights reserved.
-        </td>
-      </tr>
-    </table>
-  </body>
-  </html>
-  `,
-});
-
+          <!-- Footer -->
+          <tr>
+            <td style="background-color:#f4f4f4; text-align:center; padding:20px; font-size:12px; color:#888;">
+              Thank you for shopping with <strong>Limpopo Furniture</strong>!<br/>
+              &copy; ${new Date().getFullYear()} Limpopo Furniture. All rights reserved.
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+      `,
+    });
 
     res.json({ success: true, order });
   } catch (err) {
@@ -340,6 +343,7 @@ exports.markOrderDelivered = async (req, res) => {
     res.status(500).json({ success: false, error: "Failed to mark as delivered" });
   }
 };
+
 
 exports.cancelOrder = async (req, res) => {
   try {
