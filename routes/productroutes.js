@@ -4,11 +4,11 @@ const upload = require("../middleware/multer");
 const { addProduct, getProducts, updateProduct, deleteProduct, searchProducts, addReview,
   deleteReview, toggleReviewVisibility,} = require("../controllers/productController");
 
-router.post("/add", authenticateUser, requireAdmin, upload.array("images", 5), addProduct);
-router.post("/add", upload.array("images", 5), addProduct);
+router.post("/add", authenticateUser, requireAdmin, upload.array("images", 7), addProduct);
+router.post("/add", upload.array("images", 7), addProduct);
 router.get("/", getProducts);
-router.put("/:id", authenticateUser, requireAdmin, upload.array("images", 5), updateProduct);// to include authorization
-router.put("/:id",upload.array("images", 5), updateProduct);
+router.put("/:id", authenticateUser, requireAdmin, upload.array("images", 7), updateProduct);// to include authorization
+router.put("/:id",upload.array("images", 7), updateProduct);
 router.delete("/:id", authenticateUser, requireAdmin, deleteProduct);
 router.get("/search", searchProducts);
 
