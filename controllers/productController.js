@@ -4,8 +4,12 @@ const Product = require("../models/Product");
 exports.addProduct = async (req, res) => {
   try {
     const { name, description, price, commission, stock, category } = req.body;
+
+    // Cloudinary image URLs
     const images = req.files.map(file => file.path);
-    const product = new Product({ name, description, price, commission, stock, category, images });
+
+    const product = new Product({name,description,price,commission,stock,category,images });
+
     await product.save();
     res.status(201).json(product);
   } catch (err) {
@@ -27,10 +31,18 @@ exports.getProducts = async (req, res) => {
 exports.updateProduct = async (req, res) => {
   try {
     const updates = req.body;
+
+    // If new images were uploaded, replace the old ones
     if (req.files?.length > 0) {
       updates.images = req.files.map(file => file.path);
     }
-    const product = await Product.findByIdAndUpdate(req.params.id, updates, { new: true });
+
+    const product = await Product.findByIdAndUpdate(
+      req.params.id,
+      updates,
+      { new: true }
+    );
+
     res.json(product);
   } catch (err) {
     res.status(500).json({ error: "Failed to update product" });
@@ -46,6 +58,7 @@ exports.deleteProduct = async (req, res) => {
     res.status(500).json({ error: "Failed to delete product" });
   }
 };
+
 
 //Search products with filters
 exports.searchProducts = async (req, res) => {
