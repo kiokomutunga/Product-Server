@@ -34,6 +34,7 @@ app.use("/api/products", require("./routes/productroutes"));
 app.use("/api/orders", require("./routes/orderroutes"));
 app.use("/api/payments", require("./routes/paymentRoutes"));
 app.use("/api/mpesa", require("./routes/mpesaRoutes"));
+app.use("/api/email", require("./routes/emailRoutes"));
 
 // DB connection & server start
 mongoose.connect(process.env.MONGO_URI)
