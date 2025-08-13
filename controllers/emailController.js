@@ -51,14 +51,6 @@ const sendSubscriptionEmail = async (req, res) => {
   const { email } = req.body;
 
   try {
-    // Notify admin
-    await transporter.sendMail({
-      from: `"Newsletter" <${process.env.EMAIL_USER}>`,
-      to: process.env.ADMIN_EMAIL,
-      subject: "New Newsletter Subscriber",
-      text: `A new user subscribed: ${email}`,
-    });
-
     // Send welcome email to subscriber
     await transporter.sendMail({
       from: `"Your Website" <${process.env.EMAIL_USER}>`,
