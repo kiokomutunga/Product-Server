@@ -70,7 +70,7 @@ exports.placeOrder = async (req, res) => {
         You can track your order anytime from your account.
       </p>
 
-      <a href="https://furnish-ease-shop.vercel.app/${order._id}" 
+      <a href="https://furnish-ease-shop.vercel.app/track-order?order=${order._id}" 
          style="display: inline-block; margin-top: 20px; padding: 12px 20px; background: #ffb300; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
          View My Order
       </a>
@@ -211,7 +211,7 @@ exports.updateOrderStatus = async (req, res) => {
 
         <!-- CTA -->
         <p style="margin-top:30px; text-align:center;">
-          <a href="https://furnish-ease-shop.vercel.app/${order._id}" 
+          <a href="https://furnish-ease-shop.vercel.app/track-order?order=${order._id}" 
             style="background:#0d6efd; color:#fff; padding:12px 24px; text-decoration:none; font-weight:bold; border-radius:6px;">
             View Order Details
           </a>
@@ -316,7 +316,7 @@ exports.markOrderDelivered = async (req, res) => {
 
               <!-- CTA Button -->
               <p style="margin-top:30px; text-align:center;">
-                <a href="https://furnish-ease-shop.vercel.app/${order._id}" 
+                <a href="https://furnish-ease-shop.vercel.app/track-order?order=${order._id}" 
                   style="background:#0d6efd; color:#fff; padding:12px 24px; text-decoration:none; font-weight:bold; border-radius:6px;">
                   View Your Order
                 </a>
