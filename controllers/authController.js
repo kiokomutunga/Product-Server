@@ -7,28 +7,44 @@ const { sendEmail } = require("../utils/mailer");
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+// Utility: generate and send OTP
+const generateAndSendOtp = async (email, subject) => {
+  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+  await Otp.findOneAndUpdate(
+    { email },
+    { code: otpCode, expiresAt: Date.now() + 10 * 60 * 1000 },
+    { upsert: true }
+  );
+
+  await sendEmail({
+    to: email,
+    subject,
+    html: `<p>Your OTP is <b>${otpCode}</b></p>`
+  });
+
+  return otpCode;
+};
+
 // Register
 exports.register = async (req, res) => {
   try {
     const { name, email, phone, password } = req.body;
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) return res.status(400).json({ message: "User already exists" });
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await User.create({ name, email, phone, password: hashedPassword });
 
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    await Otp.create({ email, code: otpCode, expiresAt: Date.now() + 10 * 60 * 1000 });
-
-    await sendEmail({
-      to: email,
-      subject: "Verify Your Email",
-      html: `<p>Your OTP is <b>${otpCode}</b></p>`
-    });
+    await generateAndSendOtp(email, "Verify Your Email");
 
     res.status(201).json({ message: "OTP sent to email" });
   } catch (err) {
     res.status(500).json({ error: "Registration failed" });
   }
 };
-//register admin
+
 // Admin Register (with secret key)
 exports.registerAdmin = async (req, res) => {
   try {
@@ -47,17 +63,10 @@ exports.registerAdmin = async (req, res) => {
       email,
       phone,
       password: hashedPassword,
-      role: "admin", // assign admin role
+      role: "admin",
     });
 
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    await Otp.create({ email, code: otpCode, expiresAt: Date.now() + 10 * 60 * 1000 });
-
-    await sendEmail({
-      to: email,
-      subject: "Verify Your Admin Email",
-      html: `<p>Your OTP is <b>${otpCode}</b></p>`
-    });
+    await generateAndSendOtp(email, "Verify Your Admin Email");
 
     res.status(201).json({ message: "Admin registered. OTP sent to email." });
   } catch (err) {
@@ -81,6 +90,26 @@ exports.verifyOtp = async (req, res) => {
     res.json({ message: "Email verified" });
   } catch (err) {
     res.status(500).json({ error: "OTP verification failed" });
+  }
+};
+
+// Resend OTP
+exports.resendOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (user.isVerified) {
+      return res.status(400).json({ message: "User already verified" });
+    }
+
+    await generateAndSendOtp(email, "Resend OTP Verification");
+
+    res.json({ message: "OTP resent to your email" });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to resend OTP" });
   }
 };
 
@@ -110,18 +139,7 @@ exports.forgotPassword = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    await Otp.findOneAndUpdate(
-      { email },
-      { code: otpCode, expiresAt: Date.now() + 10 * 60 * 1000 },
-      { upsert: true }
-    );
-
-    await sendEmail({
-      to: email,
-      subject: "Password Reset OTP",
-      html: `<p>Your password reset OTP is <b>${otpCode}</b></p>`
-    });
+    await generateAndSendOtp(email, "Password Reset OTP");
 
     res.json({ message: "OTP sent to your email" });
   } catch (err) {
@@ -195,6 +213,8 @@ exports.googleLogin = async (req, res) => {
     res.status(500).json({ error: "Google login failed" });
   }
 };
+
+// Get Profile
 exports.getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
@@ -205,4 +225,3 @@ exports.getProfile = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch profile" });
   }
 };
-

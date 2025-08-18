@@ -8,7 +8,8 @@ const {
   changePassword,
   getProfile,
   registerAdmin,
-  googleLogin
+  googleLogin,
+  resendOtp
 } = require("../controllers/authController");
 
 const { authenticateUser } = require("../middleware/auth");
@@ -21,6 +22,7 @@ router.post("/reset-password", resetPassword);
 router.post("/change-password", authenticateUser, changePassword);
 router.post("/google-login", googleLogin);
 router.get("/profile", authenticateUser, getProfile);
+router.get("/resendOtp", resendOtp);
 
 
 
