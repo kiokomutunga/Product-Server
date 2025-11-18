@@ -8,7 +8,7 @@ const app = express();
 // Allowed origins list
 const allowedOrigins = [
   "https://furnish-ease-shop.vercel.app",      // User site
-  "https://product-order-command-hub.vercel.app" // Admin site
+  "https://product-order-command-hub.vercel.app" 
 ];
 
 // CORS setup
@@ -40,7 +40,7 @@ app.use("/api/email", require("./routes/emailRoutes"));
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     app.listen(process.env.PORT || 5000, () =>
-      console.log(`✅ Server running on port ${process.env.PORT || 5000}`)
+      console.log(` Server running on port ${process.env.PORT || 5000}`)
     );
   })
-  .catch(err => console.error("❌ DB connection error:", err));
+  .catch(err => console.error(" DB connection error:", err));
